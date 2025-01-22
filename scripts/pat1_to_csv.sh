@@ -1,0 +1,1 @@
+sed -e "s/\[//g;s/\]//g;s/'//g;s|\t|,|g" /home/bmoginot/new_kraken/k2om_output/pat1 > /home/bmoginot/new_kraken/k2om_output/pat1.csv
