@@ -1,0 +1,9 @@
+home dir = /media/catherine/Seagate/HPCC_Backup/aavalos4/
+
+final mags are in ~/MAGS i believe
+
+# SCRIPT: ~/making_mags/ecoli_MAGs_2.0.py
+
+map_reads_to_ref takes whole genome (or plasmid) sequences from ~/ecoli_umbs and builds a bowtie index. the index is supposed to be stored in ~/making_mags/ecoli_MAGs_2.0 but i can't find them in there
+
+READ PAPERS ON "latest and greatest analyses" for eDNA stuff
