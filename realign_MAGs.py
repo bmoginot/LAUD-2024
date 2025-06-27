@@ -4,7 +4,7 @@ import os
 import sys
 import glob
 import argparse
-import pandas as pd
+import pandas as pd # type: ignore
 import time
 
 def get_args(args):
