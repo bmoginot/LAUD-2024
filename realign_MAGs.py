@@ -12,6 +12,7 @@ def get_args(args):
     parser = argparse.ArgumentParser()
     parser.add_argument("-r", "--reads", required=True)
     parser.add_argument("-m", "--mag", required=True)
+    parser.add_argument("-t", "--threads")
     return parser.parse_args(args)
 
 def get_bladder_samples():
@@ -32,17 +33,19 @@ def filter_reads(reads, bladder_samples):
             non_bladder_samples.append(r)
     return non_bladder_samples
 
-def run_bowtie(mag, ind, reads):
+def run_bowtie(mag, ind, reads, threads):
     print("building index...")
     os.system(f"bowtie2-build -q {mag} {ind}") # build index to act as reference for bt2
     print(f"done\n")
+
+    proc = str(threads) if threads else "1"
 
     for i in range(1): # for i in range(0, len(reads), 2):
         sample_num = reads[i].split("/")[-1].split("_")[0]
         fread = reads[i]
         rread = reads[i+1]
         print(f"running bowtie on {sample_num}...")
-        os.system(f"bowtie2 -p 12 -x {ind} -1 {fread} -2 {rread} -S {sample_num}_map.sam --al-conc {sample_num}_%.fq")
+        os.system(f"bowtie2 -p {proc} -x {ind} -1 {fread} -2 {rread} -S {sample_num}_map.sam --al-conc {sample_num}_%.fq")
         print(f"done\n")
 
 def main():
@@ -58,7 +61,7 @@ def main():
     bladder_mag = args.mag
     pat = args.reads.split("/")[-2]
     bt2_index = pat + "_bladder_map"
-    run_bowtie(bladder_mag, bt2_index, non_bladder_reads)
+    run_bowtie(bladder_mag, bt2_index, non_bladder_reads, args.threads)
 
     end = time.time()
     print(f"took {end - start} seconds")
