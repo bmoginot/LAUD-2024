@@ -1,0 +1,2 @@
+initial tests indicate that more sensitive runs cause more reads to map
+next i need to do this in python and grab the percent of reads that map out
