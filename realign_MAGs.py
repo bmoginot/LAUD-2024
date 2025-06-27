@@ -4,7 +4,8 @@ import os
 import sys
 import glob
 import argparse
-import pandas as pd # type: ignore
+import pandas as pd
+import time
 
 def get_args(args):
     """retrieve command line arguements"""
@@ -45,6 +46,8 @@ def run_bowtie(mag, ind, reads):
         print(f"done\n")
 
 def main():
+    start = time.time() # how long does this take to run?
+
     args = get_args(sys.argv[1:])
 
     bladder_samples = get_bladder_samples()
@@ -56,6 +59,9 @@ def main():
     pat = args.reads.split("/")[-2]
     bt2_index = pat + "_bladder_map"
     run_bowtie(bladder_mag, bt2_index, non_bladder_reads)
+
+    end = time.time()
+    print(f"took {end - start} seconds")
 
 if __name__ == "__main__":
     main()
