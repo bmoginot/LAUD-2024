@@ -35,7 +35,7 @@ def run_bowtie(mag, ind, reads, threads):
     for opt in params:
         print(f"running bowtie2 with {opt}...")
 
-        subprocess.run([
+        result = subprocess.run([
             "bowtie2",
             opt, # parameter affecting stringency
             "-p", proc,
@@ -44,7 +44,13 @@ def run_bowtie(mag, ind, reads, threads):
             "-2", rread,
             "-S" f"{sample_num}_map.sam",
             "--al-conc", f"{sample_num}_%.fq"
-        ])
+            ],
+            capture_output = True,
+            text = True
+        )
+
+        print(result.stdout)
+        print(result.sterr)
         
         print(f"done\n")
 
