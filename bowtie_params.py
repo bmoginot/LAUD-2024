@@ -50,7 +50,7 @@ def run_bowtie(mag, ind, reads, threads):
         )
 
         print(result.stdout)
-        print(result.sterr)
+        print(result.stderr)
         
         print(f"done\n")
 
