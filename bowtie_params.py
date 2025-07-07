@@ -1,5 +1,6 @@
 """run bowtie2 on the same read pair with different parameters to compare stringency"""
 
+import os
 import sys
 import glob
 import argparse
@@ -13,7 +14,7 @@ def get_args(args):
     parser.add_argument("-t", "--threads")
     return parser.parse_args(args)
 
-def run_bowtie(mag, ind, reads, threads, log):
+def build_index(mag, ind):
     print("building index...")
 
     subprocess.run([ # build index to act as reference for bt2
@@ -24,17 +25,15 @@ def run_bowtie(mag, ind, reads, threads, log):
 
     print(f"done\n")
 
-    proc = str(threads) if threads else "1"
+    return
 
-    sample_num = reads[0].split("/")[-1].split("_")[0]
-    fread = reads[0]
-    rread = reads[1]
+def run_bowtie(ind, fread, rread, sample_num, threads, log):
+
+    proc = str(threads) if threads else "1"
 
     params = ["--very-fast", "--fast", "--sensitive", "--very-sensitive"]
 
-    for opt in params:
-        print(f"running bowtie2 with {opt}...")
-
+    for opt in params: # run bowtie on read pair with each stringency setting
         result = subprocess.run([
             "bowtie2",
             opt, # parameter affecting stringency
@@ -50,22 +49,38 @@ def run_bowtie(mag, ind, reads, threads, log):
         )
 
         log.write(f"{opt}:\n")
-        for line in result.stderr.splitlines():
+        for line in result.stderr.splitlines(): # write out percent alignment rate for each parameter
             if "overall alignment rate" in line:
                 log.write(f"{line}\n\n")
-
-        print(f"done\n")
 
 def main():
     args = get_args(sys.argv[1:])
 
+    if os.path.isdir("output"):
+        os.system("rm -r output")
+
+    os.mkdir("output")
+
     reads = sorted(glob.glob(f"{args.reads}/*"))
+    pat = reads[0].split("/")[-2]
 
     log = open("mag-realignment.log", "w")
 
     bladder_mag = args.mag
-    bt2_index = "output/pat17_bladder"
-    run_bowtie(bladder_mag, bt2_index, reads, args.threads, log)
+    bt2_index = f"output/{pat}_bladder"
+
+    build_index(bladder_mag, bt2_index)
+    
+    for i in range(0, len(reads), 2):
+        sample_num = reads[i].split("/")[-1].split("_")[0] # get sample number to write to output
+        log.write(f"{sample_num}\n\n")
+
+        fread = reads[i]
+        rread = reads[i+1]
+
+        print(f"running {sample_num}...")
+        run_bowtie(bt2_index, fread, rread, sample_num, args.threads, log)
+        print(f"done\n")
 
     log.close()
 
