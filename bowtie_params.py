@@ -13,7 +13,7 @@ def get_args(args):
     parser.add_argument("-t", "--threads")
     return parser.parse_args(args)
 
-def run_bowtie(mag, ind, reads, threads):
+def run_bowtie(mag, ind, reads, threads, log):
     print("building index...")
 
     subprocess.run([ # build index to act as reference for bt2
@@ -42,16 +42,18 @@ def run_bowtie(mag, ind, reads, threads):
             "-x", ind,
             "-1", fread,
             "-2", rread,
-            "-S" f"{sample_num}_map.sam",
-            "--al-conc", f"{sample_num}_%.fq"
+            "-S" f"output/{sample_num}_map.sam",
+            "--al-conc", f"output/{sample_num}_%.fq"
             ],
             capture_output = True,
             text = True
         )
 
-        print(result.stdout)
-        print(result.stderr)
-        
+        log.write(f"{opt}:\n")
+        for line in result.stderr.splitlines():
+            if "overall alignment rate" in line:
+                log.write(f"{line}\n\n")
+
         print(f"done\n")
 
 def main():
@@ -59,9 +61,13 @@ def main():
 
     reads = sorted(glob.glob(f"{args.reads}/*"))
 
+    log = open("mag-realignment.log", "w")
+
     bladder_mag = args.mag
-    bt2_index = "pat17_bladder"
-    run_bowtie(bladder_mag, bt2_index, reads, args.threads)
+    bt2_index = "output/pat17_bladder"
+    run_bowtie(bladder_mag, bt2_index, reads, args.threads, log)
+
+    log.close()
 
 if __name__ == "__main__":
     main()
