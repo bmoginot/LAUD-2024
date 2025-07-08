@@ -1,2 +1,11 @@
 initial tests indicate that more sensitive runs cause more reads to map
 next i need to do this in python and grab the percent of reads that map out
+
+got percent of reads that map out on full read sets
+we want fewer reads to align (idea is the first reads to be dropped will be the ones that are from the strain we don't want)
+very slightly fewer reads align with --fast and --very-fast, so we're going to run the final script with --very-fast
+
+copying over all reads from all pats right now
+once that's done (in ages), i'm going to remove the bladder reads
+
+while i'm waiting, the next step is to assemble with spades
