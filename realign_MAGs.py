@@ -35,26 +35,20 @@ def filter_reads(reads, bladder_samples):
 
 def build_index(mag, ind):
 	"""build index from mag for bowtie alignment"""
-	print("building index...")
-	
 	subprocess.run([ # build index to act as reference for bt2
 		"bowtie2-build", "-q", mag, ind
 	])
-
-	print(f"done\n")
 
 	return
 
 def run_bowtie(ind, reads, threads, out, log):
 	"""run bowtie, aligning each non-bladder read to the bladder mag using --very-fast heuristic"""
-	proc = str(threads) if threads else "1"
-	
-	print(reads)
+	proc = str(threads) if threads else "1"	
 
 	for i in range(0, len(reads), 2):
 		fread = reads[i]
 		rread = reads[i+1]
-		sample_num = fread.split("_")[0]
+		sample_num = os.path.split(fread)[1].split("_")[0]
 		print(sample_num + "...", end=" ")
 
 		result = subprocess.run([
@@ -65,7 +59,7 @@ def run_bowtie(ind, reads, threads, out, log):
 			"-1", fread,
 			"-2", rread,
 			"-S", os.path.join(out, sample_num + "_map.sam"),
-			"--al-conc", os.path.join(out, sample_nam + "_%.fq")
+			"--al-conc", os.path.join(out, sample_num + "_%.fq")
 			],
 			capture_output = True,
 			text = True
@@ -76,9 +70,6 @@ def run_bowtie(ind, reads, threads, out, log):
 		for line in result.stderr.splitlines(): # write out percent alignment rate for each parameter
 			if "overall alignment rate" in line:
 				log.write(f"{line}\n\n")
-
-		with open("errors.log", "w") as e:
-			e.write(result.stdout)
 
 	print()
 
@@ -95,7 +86,7 @@ def main():
 		os.system(f"rm -r {outdir}")
 	os.mkdir(outdir)
 
-	subset_reads = "/data/subset/" # path to subset reads we are using for testing # eek_data = "/media/catherine/Seagate/EEK/" # path to EEK directory, which contains all participant reads
+	subset_reads = "data/subset/" # path to subset reads we are using for testing # eek_data = "/media/catherine/Seagate/EEK/" # path to EEK directory, which contains all participant reads
 	mags_path = "/media/catherine/Seagate/HPCC_Backup/aavalos4/making_mags/MAGS/" # path to Lexi's dir with the mags
 
 	bladder_samples = get_bladder_samples()
@@ -116,7 +107,9 @@ def main():
 		bladder_mag = glob.glob(os.path.join(mags_path, pat, "Bladder*"))[0] # the bladder mag will be the only one in the directory with the Bladder prefix
 		bt2_index = os.path.join(patdir, pat + "_bladder_map")
 
+		print(f"building index for {pat}...")
 		build_index(bladder_mag, bt2_index)
+		print(f"done\n")
 
 		print(f"running bowtie on {pat}...") 
 		run_bowtie(bt2_index, non_bladder_reads, args.threads, patdir, log)
