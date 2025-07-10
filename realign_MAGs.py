@@ -86,12 +86,12 @@ def main():
 		os.system(f"rm -r {outdir}")
 	os.mkdir(outdir)
 
-	subset_reads = "data/subset/" # path to subset reads we are using for testing # eek_data = "/media/catherine/Seagate/EEK/" # path to EEK directory, which contains all participant reads
+	eek_reads = "/media/catherine/Seagate/EEK/" # path to EEK directory, which contains all participant reads
 	mags_path = "/media/catherine/Seagate/HPCC_Backup/aavalos4/making_mags/MAGS/" # path to Lexi's dir with the mags
 
 	bladder_samples = get_bladder_samples()
 
-	log = open(os.path.join(outdir, "true-realignment-log-test.log"), "w")
+	log = open(os.path.join(outdir, "mag-realignment.log"), "w")
 
 	for patnum in args.participants:
 		pat = "pat" + str(patnum)
@@ -100,7 +100,7 @@ def main():
 		patdir = os.path.join(outdir, pat)
 		os.mkdir(patdir) 
 
-		readsdir = os.path.join(subset_reads, pat) # readsdir = os.path.join(eek_reads, pat) # get path to reads directory based on input participant(s)
+		readsdir = os.path.join(eek_reads, pat) # get path to reads directory based on input participant(s)
 		reads = sorted(glob.glob(os.path.join(readsdir, "*"))) # get reads to run software on
 		non_bladder_reads = filter_reads(reads, bladder_samples)
 
