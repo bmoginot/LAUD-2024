@@ -11,8 +11,9 @@ import subprocess
 def get_args(args):
 	"""retrieve command line arguements"""
 	parser = argparse.ArgumentParser()
-	parser.add_argument("-p", "--participants", nargs="+", required=True) # get list of participants to align and assemble
+	parser.add_argument("-p", "--participants", nargs="+", required=True, help="get list of participants to align and assemble")
 	parser.add_argument("-t", "--threads")
+	parser.add_argument("-s", "--subset", action="store_true", help="run on test data (still uses pat numbers)")
 	return parser.parse_args(args)
 
 def get_bladder_samples():
@@ -86,7 +87,11 @@ def main():
 		os.system(f"rm -r {outdir}")
 	os.mkdir(outdir)
 
-	eek_reads = "/media/catherine/Seagate/EEK/" # path to EEK directory, which contains all participant reads
+	if args.subset:
+		eek_reads = "data/subset/" # if i want to run on test data
+	else:
+		eek_reads = "/media/catherine/Seagate/EEK/" # path to EEK directory, which contains all participant reads
+	
 	mags_path = "/media/catherine/Seagate/HPCC_Backup/aavalos4/making_mags/MAGS/" # path to Lexi's dir with the mags
 
 	bladder_samples = get_bladder_samples()
