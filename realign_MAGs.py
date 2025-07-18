@@ -42,15 +42,13 @@ def build_index(mag, ind):
 
 	return
 
-def run_bowtie(ind, reads, threads, out, log):
+def run_bowtie(ind, reads, proc, out, log):
 	"""run bowtie, aligning each non-bladder read to the bladder mag using --very-fast heuristic"""
-	proc = str(threads) if threads else "1"	
-
 	for i in range(0, len(reads), 2):
 		fread = reads[i]
 		rread = reads[i+1]
 		sample_num = os.path.split(fread)[1].split("_")[0]
-		print(sample_num + "...", end=" ")
+		print(sample_num + "...")
 
 		result = subprocess.run([
 			"bowtie2",
@@ -62,8 +60,8 @@ def run_bowtie(ind, reads, threads, out, log):
 			"-S", os.path.join(out, sample_num + "_map.sam"),
 			"--al-conc", os.path.join(out, sample_num + "_%.fq")
 			],
-			capture_output = True,
-			text = True
+			capture_output=True,
+			text=True
 		)
 
 		log.write(f"{sample_num}:\n")
@@ -71,11 +69,28 @@ def run_bowtie(ind, reads, threads, out, log):
 		for line in result.stderr.splitlines(): # write out percent alignment rate for each parameter
 			if "overall alignment rate" in line:
 				log.write(f"{line}\n\n")
-
-	print()
-
 	return
 
+def run_spades(reads, proc, out, log):
+	"""run spades, assembling reads that wrote out from bowtie"""	
+	for i in range(0, len(reads), 2):
+		fread = reads[i]
+		rread = reads[i+1]
+		sample_num = os.path.split(fread)[1].split("_")[0]
+		sample_out = os.path.join(out, sample_num)
+		os.mkdir(sample_out)
+		
+		print(sample_num + "...")
+		result = subprocess.run([
+			"spades.py",
+			"-1", fread,
+			"-2", rread,
+			"-t", proc,
+			"-o", sample_out
+			],
+			capture_output=True
+		)
+	return
 
 def main():
 	start = time.time() # how long does this take to run
@@ -98,6 +113,8 @@ def main():
 
 	log = open(os.path.join(outdir, "mag-realignment.log"), "w")
 
+	threads = args.threads if args.threads else "16"
+
 	for patnum in args.participants:
 		pat = "pat" + str(patnum)
 		log.write(f"{pat}\n----------\n\n")
@@ -110,14 +127,27 @@ def main():
 		non_bladder_reads = filter_reads(reads, bladder_samples)
 
 		bladder_mag = glob.glob(os.path.join(mags_path, pat, "Bladder*"))[0] # the bladder mag will be the only one in the directory with the Bladder prefix
-		bt2_index = os.path.join(patdir, pat + "_bladder_map")
+
+		bowtie_out = os.path.join(patdir, "bowtie2")
+		os.mkdir(bowtie_out)
+
+		bt2_index = os.path.join(bowtie_out, pat + "_map_ref")
 
 		print(f"building index for {pat}...")
 		build_index(bladder_mag, bt2_index)
 		print(f"done\n")
 
 		print(f"running bowtie on {pat}...") 
-		run_bowtie(bt2_index, non_bladder_reads, args.threads, patdir, log)
+		run_bowtie(bt2_index, non_bladder_reads, threads, bowtie_out, log)
+		print(f"done\n")
+
+		spades_in = sorted(glob.glob(bowtie_out + "/*.fq"))
+
+		spades_out = os.path.join(patdir, "spades")
+		os.mkdir(spades_out)
+
+		print(f"running spades on {pat}...")
+		run_spades(spades_in, threads, spades_out, log)
 		print(f"done\n")
 
 	log.close()
