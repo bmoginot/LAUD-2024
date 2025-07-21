@@ -72,14 +72,15 @@ def run_bowtie(ind, reads, proc, out, log):
 	return
 
 def run_spades(reads, proc, out, log):
-	"""run spades, assembling reads that wrote out from bowtie"""	
+	"""run spades, assembling reads that wrote out from bowtie"""
+	sample_list = [] # list of sample paths for fastani
 	for i in range(0, len(reads), 2):
 		fread = reads[i]
 		rread = reads[i+1]
 		sample_num = os.path.split(fread)[1].split("_")[0]
 		sample_out = os.path.join(out, sample_num)
 		os.mkdir(sample_out)
-		
+
 		print(sample_num + "...")
 		result = subprocess.run([
 			"spades.py",
@@ -90,30 +91,52 @@ def run_spades(reads, proc, out, log):
 			],
 			capture_output=True
 		)
+		
+		sample_contigs_path = os.path.join(sample_out, "contigs.fasta")
+		sample_list.append(sample_contigs_path) # add path to contigs for assembly
+	return sample_list
+
+def run_fastani(contigs, log):
+	"""runs fastani pairwise for all assemblies in a given participant"""
+	contigs_path_list = "contigs_path_list.txt"
+	with open(contigs_path_list, "w") as f:
+		for path in contigs:
+			f.write(f"{path}\n")
+
+	result = subprocess.run([
+		"fastANI",
+		"--ql", contigs_path_list,
+		"--rl", contigs_path_list,
+		"-o", "tmp_out.txt"
+		],
+		capture_output=True,
+		text=True
+	)
+
+	with open("tmp_out.txt") as t: # write contents of fastani output to the log
+		for line in t.readlines():
+			log.write(f"{line}\n")
 	return
 
 def main():
 	start = time.time() # how long does this take to run
 
 	args = get_args(sys.argv[1:])
+	threads = args.threads if args.threads else "16"
 
 	outdir = os.path.abspath("output")
 	if os.path.isdir(outdir):
 		os.system(f"rm -r {outdir}")
 	os.mkdir(outdir)
+	log = open(os.path.join(outdir, "mag-realignment.log"), "w")
 
 	if args.subset:
 		eek_reads = "data/subset/" # if i want to run on test data
 	else:
 		eek_reads = "/media/catherine/Seagate/EEK/" # path to EEK directory, which contains all participant reads
-	
 	mags_path = "/media/catherine/Seagate/HPCC_Backup/aavalos4/making_mags/MAGS/" # path to Lexi's dir with the mags
 
 	bladder_samples = get_bladder_samples()
-
-	log = open(os.path.join(outdir, "mag-realignment.log"), "w")
-
-	threads = args.threads if args.threads else "16"
 
 	for patnum in args.participants:
 		pat = "pat" + str(patnum)
@@ -147,13 +170,18 @@ def main():
 		os.mkdir(spades_out)
 
 		print(f"running spades on {pat}...")
-		run_spades(spades_in, threads, spades_out, log)
+		contigs_paths = run_spades(spades_in, threads, spades_out, log)
 		print(f"done\n")
 
-	log.close()
+		print(f"running fastani on {pat}...")
+		run_fastani(contigs_paths, log)
+		print(f"done\n")
 
 	end = time.time()
 	print(f"took {end - start} seconds")
+	log.write(f"took {end - start} seconds\n")
+
+	log.close()
 
 	return
 
