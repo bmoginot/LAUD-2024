@@ -73,7 +73,6 @@ def run_bowtie(ind, reads, proc, out, log):
 
 def run_spades(reads, proc, out, log):
 	"""run spades, assembling reads that wrote out from bowtie"""
-	sample_list = [] # list of sample paths for fastani
 	for i in range(0, len(reads), 2):
 		fread = reads[i]
 		rread = reads[i+1]
@@ -91,31 +90,37 @@ def run_spades(reads, proc, out, log):
 			],
 			capture_output=True
 		)
-		
-		sample_contigs_path = os.path.join(sample_out, "contigs.fasta")
-		sample_list.append(sample_contigs_path) # add path to contigs for assembly
-	return sample_list
+	return
 
-def run_fastani(contigs, log):
+def run_fastani(contigs, tmpdir, log):
 	"""runs fastani pairwise for all assemblies in a given participant"""
-	contigs_path_list = "contigs_path_list.txt"
-	with open(contigs_path_list, "w") as f:
+	contigs_path_list = os.path.join(tmpdir, "contigs_path_list.txt")
+	with open(contigs_path_list, "w") as f: # aggregate paths to contigs files to pass to fastani
 		for path in contigs:
 			f.write(f"{path}\n")
 
+	fastani_out = os.path.join(tmpdir, "fani_tmp_out.txt")
 	result = subprocess.run([
 		"fastANI",
 		"--ql", contigs_path_list,
 		"--rl", contigs_path_list,
-		"-o", "tmp_out.txt"
+		"-o", fastani_out
 		],
 		capture_output=True,
 		text=True
 	)
 
-	with open("tmp_out.txt") as t: # write contents of fastani output to the log
-		for line in t.readlines():
-			log.write(f"{line}\n")
+	log.write(f"query\tref\tANI\n")
+	with open(fastani_out) as f:
+		for line in f.readlines():
+			data = line.split("\t")
+			query = data[0].split("/")[-2]
+			query = "bMAG" if query.startswith("pat") else query
+			reference = data[1].split("/")[-2]
+			reference = "bMAG" if reference.startswith("pat") else reference
+			ani = data[2]
+			log.write(f"{query}\t{reference}\t{ani}\n")
+	log.write("\n")
 	return
 
 def main():
@@ -128,6 +133,8 @@ def main():
 	if os.path.isdir(outdir):
 		os.system(f"rm -r {outdir}")
 	os.mkdir(outdir)
+	tmpdir = os.path.join(outdir, "tmp")
+	os.mkdir(tmpdir)
 	log = open(os.path.join(outdir, "mag-realignment.log"), "w")
 
 	if args.subset:
@@ -165,16 +172,17 @@ def main():
 		print(f"done\n")
 
 		spades_in = sorted(glob.glob(bowtie_out + "/*.fq"))
-
 		spades_out = os.path.join(patdir, "spades")
 		os.mkdir(spades_out)
 
 		print(f"running spades on {pat}...")
-		contigs_paths = run_spades(spades_in, threads, spades_out, log)
+		run_spades(spades_in, threads, spades_out, log)
 		print(f"done\n")
 
+		contigs_paths = glob.glob(os.path.join(outdir, "pat*/spades/*/contigs.fasta")) # paths to each contigs file from SPAdes run for this pat
+		contigs_paths.append(bladder_mag)
 		print(f"running fastani on {pat}...")
-		run_fastani(contigs_paths, log)
+		run_fastani(contigs_paths, tmpdir, log)
 		print(f"done\n")
 
 	end = time.time()
