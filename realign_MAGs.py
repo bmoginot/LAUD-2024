@@ -92,14 +92,14 @@ def run_spades(reads, proc, out, log):
 		)
 	return
 
-def run_fastani(contigs, tmpdir, log):
+def run_fastani(contigs, pat, tmpdir, log):
 	"""runs fastani pairwise for all assemblies in a given participant"""
 	contigs_path_list = os.path.join(tmpdir, "contigs_path_list.txt")
 	with open(contigs_path_list, "w") as f: # aggregate paths to contigs files to pass to fastani
 		for path in contigs:
 			f.write(f"{path}\n")
 
-	fastani_out = os.path.join(tmpdir, "fani_tmp_out.txt")
+	fastani_out = os.path.join(tmpdir, f"fani_tmp_out_{pat}.txt")
 	result = subprocess.run([
 		"fastANI",
 		"--ql", contigs_path_list,
@@ -182,7 +182,7 @@ def main():
 		contigs_paths = glob.glob(os.path.join(outdir, "pat*/spades/*/contigs.fasta")) # paths to each contigs file from SPAdes run for this pat
 		contigs_paths.append(bladder_mag)
 		print(f"running fastani on {pat}...")
-		run_fastani(contigs_paths, tmpdir, log)
+		run_fastani(contigs_paths, pat, tmpdir, log)
 		print(f"done\n")
 
 	end = time.time()
