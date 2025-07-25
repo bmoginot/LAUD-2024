@@ -94,7 +94,7 @@ def run_spades(reads, proc, out, log):
 
 def run_fastani(contigs, pat, tmpdir, log):
 	"""runs fastani pairwise for all assemblies in a given participant"""
-	contigs_path_list = os.path.join(tmpdir, "contigs_path_list.txt")
+	contigs_path_list = os.path.join(tmpdir, "contigs_path_list_{pat}.txt")
 	with open(contigs_path_list, "w") as f: # aggregate paths to contigs files to pass to fastani
 		for path in contigs:
 			f.write(f"{path}\n")
