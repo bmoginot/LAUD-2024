@@ -1,9 +1,15 @@
-# Work for Dr. Putonti to Finish Up Lexi's Thesis (Summer 2025)
+# LAUD 2024 Work for Dr. Putonti + 2025 MAG Realignment
+## Kraken2 and Bracken Workflow
+The main pipeline runs Kraken2 and Bracken on sequence reads from urinary microbiome samples. The final output is microbial species occurence for each participant's samples.
 
-This project is two-fold
+### Steps
+1. *Build Kraken2 database.* Kraken2 needs to download a microbial reference database before it can run. The script helps to build that.
+2. *Generate kraken reports.* Kraken2 identifies microbial taxa present in each sample.
+3. *Generate bracken reports.* Bracken estimates relative abundance of taxa identified by Kraken2.
+4. *Find recurrent species.* The script parses Bracken files, compares samples to metadata, and finds which taxa occur in more than one sample across each participant.
 
 ## MAG Realignment
-The first aim is to re-align reads from certain participants and re-assemble those sequences
+After building the above pipeline, we re-aligned reads from certain participants and re-assembled those sequences.
 
 ### Steps
 1. *Identify aberrant participants.* Lexi found several pats whose MAGs may be representative of >1 species rather than just E. coli. Many of these are apparent in the text of her thesis and include pats 3, 17, and 20.
